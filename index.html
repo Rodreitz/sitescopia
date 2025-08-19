@@ -12,7 +12,7 @@
                    frame-src 'self' https://*.firebaseapp.com;">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Precificação Automática</title>
+    <title>Calculadora de Precificação</title>
     <link rel="icon" type="image/png" href="/assets/logo.png">
     
     <link rel="manifest" href="/manifest.json">
@@ -46,46 +46,18 @@
     <style>
         body.loading #authContainer,
         body.loading #appView,
-        body.loading #legalContainer {
-            display: none;
-        }
-        body:not(.loading) #loadingIndicator {
-            display: none;
-        }
-        .tooltip { position: relative; display: inline-block; }
-        .tooltip .tooltiptext { visibility: hidden; width: 220px; background-color: #555; color: #fff; text-align: center; border-radius: 6px; padding: 5px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 12px; font-family: 'Inter', sans-serif; }
-        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+        body.loading #legalContainer { display: none; }
+        body:not(.loading) #loadingIndicator { display: none; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #DA7E55; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .input-prefix { position: absolute; left: 0; top: 0; height: 100%; display: flex; align-items: center; padding-left: 0.75rem; color: #6b7280; }
         .input-group input { padding-left: 2.5rem; }
-        .saved-status { transition: opacity 0.5s ease-in-out, color 0.3s; }
         #sidebar { transition: transform 0.3s ease-in-out; }
-        .btn-loading {
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        .legal-content h2 {
-            font-family: 'Montserrat', serif;
-            font-size: 1.5rem;
-            color: #786D4E;
-            margin-bottom: 1rem;
-        }
-        .legal-content h3 {
-            font-family: 'Montserrat', serif;
-            font-size: 1.25rem;
-            color: #786D4E;
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .legal-content p, .legal-content li {
-            margin-bottom: 1rem;
-            line-height: 1.6;
-        }
-        .legal-content ul {
-            list-style-type: disc;
-            padding-left: 1.5rem;
-        }
+        .btn-loading { cursor: not-allowed; opacity: 0.7; }
+        .legal-content h2 { font-family: 'Montserrat', serif; font-size: 1.5rem; color: #786D4E; margin-bottom: 1rem; }
+        .legal-content h3 { font-family: 'Montserrat', serif; font-size: 1.25rem; color: #786D4E; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .legal-content p, .legal-content li { margin-bottom: 1rem; line-height: 1.6; }
+        .legal-content ul { list-style-type: disc; padding-left: 1.5rem; }
     </style>
 </head>
 <body class="bg-brand-bg/50 text-brand-text loading">
@@ -99,7 +71,7 @@
             <div class="flex items-center justify-center min-h-screen p-4">
                 <div class="w-full max-w-md">
                     <header class="text-center mb-8">
-                        <img src="/assets/logo-mockup.png" alt="Logo Prodex" class="mx-auto w-48 h-auto mb-4">
+                        <img src="/assets/logo-mockup.png" alt="Logo" class="mx-auto w-48 h-auto mb-4">
                         <h1 class="font-display text-3xl text-brand-primary">Área Exclusiva</h1>
                         <p class="text-brand-text">Acesse a calculadora de precificação e outras ferramentas.</p>
                     </header>
@@ -138,7 +110,7 @@
             <div class="flex items-center justify-center min-h-screen p-4">
                 <div class="w-full max-w-md">
                     <header class="text-center mb-8">
-                        <img src="/assets/logo-mockup.png" alt="Logo Prodex" class="mx-auto w-48 h-auto mb-4">
+                        <img src="/assets/logo-mockup.png" alt="Logo" class="mx-auto w-48 h-auto mb-4">
                         <h1 class="font-display text-3xl text-brand-primary">Ative sua Conta</h1>
                         <p class="text-brand-text">Crie sua conta para aceder à plataforma.</p>
                     </header>
@@ -179,7 +151,7 @@
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden"></div>
             <aside id="sidebar" class="bg-brand-bg text-brand-text w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-30">
                 <a href="#dashboard" class="nav-link text-white text-xl flex items-center px-4">
-                    <img src="/assets/logo-mockup.png" alt="Logo Prodex" class="w-32 h-auto mx-auto">
+                    <img src="/assets/logo-mockup.png" alt="Logo" class="w-32 h-auto mx-auto">
                 </a>
                 <nav>
                     <a href="#dashboard" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-brand-primary hover:text-white bg-brand-primary/20">Página Inicial</a>
@@ -522,10 +494,10 @@
 
                 <h2 class="pt-6">Canais de Atendimento</h2>
                 <p>Ainda com dúvidas? Entre em contato pelos nossos canais:</p>
-                <ul class="space-y-2">
-                    <li><strong>Instagram:</strong> <a href="https://instagram.com/prodexoficial" target="_blank" class="text-brand-primary hover:underline">@prodexoficial</a></li>
-                    <li><strong>E-mail:</strong> <a href="mailto:contato.prodex@gmail.com" class="text-brand-primary hover:underline">contato.prodex@gmail.com</a></li>
-					<li><strong>WhatsApp:</strong> <a href="https://wa.me/5548996081230" target="_blank" class="text-brand-primary hover:underline">Clique aqui para conversar</a></li>
+                 <ul class="space-y-2">
+                    <li><strong>Instagram:</strong> <a href="https://instagram.com/arttesdabel" target="_blank" class="text-brand-primary hover:underline">@arttesdabel</a></li>
+                    <li><strong>E-mail:</strong> <a href="mailto:contato@arttesdabel.com.br" class="text-brand-primary hover:underline">contato@arttesdabel.com.br</a></li>
+                    <li><strong>WhatsApp:</strong> <a href="https://wa.me/5548999082581" target="_blank" class="text-brand-primary hover:underline">Clique aqui para conversar</a></li>
                 </ul>
             </div>
         </div>
@@ -1030,6 +1002,7 @@
                         const parts = value.split('.');
                         if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
                         e.target.value = value;
+                        // CORREÇÃO 1: A chamada para calculateAll() foi adicionada aqui.
                         calculateAll();
                     });
                 }
@@ -1039,7 +1012,16 @@
                 const observer = new MutationObserver((mutations) => {
                     mutations.forEach((mutation) => {
                         mutation.addedNodes.forEach((node) => {
-                            if (node.nodeType === 1) node.querySelectorAll('.numeric-input').forEach(setNumericInputFilter);
+                            if (node.nodeType === 1) {
+                                node.querySelectorAll('.numeric-input').forEach(setNumericInputFilter);
+                                // Adiciona o listener de input para os novos campos
+                                node.querySelectorAll('.piece-input').forEach(input => {
+                                    input.addEventListener('input', () => {
+                                        calculateAll();
+                                        savePieceToLocalStorage();
+                                    });
+                                });
+                            }
                         });
                     });
                 });
@@ -1128,6 +1110,7 @@
 
                 calculatorNode.addEventListener('input', (e) => {
                     if (e.target.matches('.piece-input')) {
+                        calculateAll();
                         savePieceToLocalStorage();
                     }
                 });

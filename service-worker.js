@@ -1,12 +1,13 @@
 // service-worker.js
 
 // O nome do cache é versionado. Mudar este nome força a atualização de todos os arquivos.
-const CACHE_NAME = 'arttesdabel-cache-v1.0.2.4'; // Incremente a versão do cache
+const CACHE_NAME = 'prodex-cache-v1.1.0'; // Incremente a versão do cache
 // Lista de arquivos e recursos essenciais para o funcionamento offline do app.
 const urlsToCache = [
   '/',
   '/index.html',
   '/assets/logo.png',
+  '/assets/logo-mockup.png',
   '/manifest.json'
 ];
 
@@ -26,7 +27,6 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('Cache aberto.');
-      // --- NOVO: Cacheamento resiliente ---
       // Cacheia os arquivos essenciais primeiro. Se falhar, a instalação falha.
       return cache.addAll(urlsToCache).then(() => {
         // Depois, tenta cachear os recursos externos. Se um deles falhar, não impede a instalação.
