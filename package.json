@@ -1,0 +1,25 @@
+{
+  "name": "sites",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rodreitz/sites.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Rodreitz/sites/issues"
+  },
+  "homepage": "https://github.com/Rodreitz/sites#readme",
+  "description": "",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "firebase": "^12.0.0",
+    "firebase-admin": "^13.4.0"
+  }
+}

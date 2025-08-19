@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'self'; 
+                   script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://cdn.jsdelivr.net; 
+                   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; 
+                   font-src 'self' https://fonts.gstatic.com; 
+                   connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com; 
+                   img-src 'self' data:; 
+                   frame-src 'self' https://*.firebaseapp.com;">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Precificação Automática</title>
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#DA7E55">
+    <link rel="apple-touch-icon" href="/assets/logo.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-bg': '#F3E4D7',
+                        'brand-text': '#786D4E',
+                        'brand-olive': '#A5A184',
+                        'brand-pink': '#F39B92',
+                        'brand-primary': '#DA7E55',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                        'display': ['Montserrat', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body.loading #authContainer,
+        body.loading #appView,
+        body.loading #legalContainer {
+            display: none;
+        }
+        body:not(.loading) #loadingIndicator {
+            display: none;
+        }
+        .tooltip { position: relative; display: inline-block; }
+        .tooltip .tooltiptext { visibility: hidden; width: 220px; background-color: #555; color: #fff; text-align: center; border-radius: 6px; padding: 5px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 12px; font-family: 'Inter', sans-serif; }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #DA7E55; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .input-prefix { position: absolute; left: 0; top: 0; height: 100%; display: flex; align-items: center; padding-left: 0.75rem; color: #6b7280; }
+        .input-group input { padding-left: 2.5rem; }
+        .saved-status { transition: opacity 0.5s ease-in-out, color 0.3s; }
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        .btn-loading {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .legal-content h2 {
+            font-family: 'Montserrat', serif;
+            font-size: 1.5rem;
+            color: #786D4E;
+            margin-bottom: 1rem;
+        }
+        .legal-content h3 {
+            font-family: 'Montserrat', serif;
+            font-size: 1.25rem;
+            color: #786D4E;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .legal-content p, .legal-content li {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        .legal-content ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+        }
+    </style>
+</head>
+<body class="bg-brand-bg/50 text-brand-text loading">
+
+    <div id="loadingIndicator" class="flex items-center justify-center min-h-screen">
+        <div class="loader"></div>
+    </div>
+
+    <div id="authContainer">
+        <div id="loginView">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="w-full max-w-md">
+                    <header class="text-center mb-8">
+                        <img src="/assets/logo-mockup.png" alt="Logo Prodex" class="mx-auto w-48 h-auto mb-4">
+                        <h1 class="font-display text-3xl text-brand-primary">Área Exclusiva</h1>
+                        <p class="text-brand-text">Acesse a calculadora de precificação e outras ferramentas.</p>
+                    </header>
+                    <main class="bg-white p-8 rounded-2xl shadow-lg shadow-brand-olive/20">
+                        <form id="loginForm" class="space-y-6">
+                            <div>
+                                <label for="loginEmail" class="block text-sm font-medium text-brand-text">Email</label>
+                                <input type="email" id="loginEmail" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-primary focus:border-brand-primary">
+                            </div>
+                            <div>
+                                <label for="loginPassword" class="block text-sm font-medium text-brand-text">Senha</label>
+                                <input type="password" id="loginPassword" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-primary focus:border-brand-primary">
+                            </div>
+                            <div id="loginErrorMessage" class="hidden p-3 bg-red-100 text-red-700 rounded-md text-sm"></div>
+                            <div class="flex items-center justify-end">
+                                <a href="#" id="forgotPasswordLink" class="text-sm text-brand-primary hover:underline">Esqueci minha senha</a>
+                            </div>
+                            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-brand-primary hover:bg-brand-text focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary font-semibold">Entrar</button>
+                        </form>
+                        <p class="text-center text-sm mt-6">
+                            Primeiro acesso? <a href="#" id="showRegisterViewLink" class="font-medium text-brand-primary hover:underline">Ative sua conta</a>
+                        </p>
+                    </main>
+                    <footer class="text-center mt-8 text-sm text-gray-500">
+                        <p>&copy; 2024 - Prodex</p>
+                        <p class="mt-2 space-x-2">
+                            <a href="#terms" class="nav-link-legal hover:underline">Termos de Serviço</a> &bull; 
+                            <a href="#privacy" class="nav-link-legal hover:underline">Política de Privacidade</a> &bull;
+                            <a href="#support" class="nav-link-legal hover:underline">Suporte</a>
+                        </p>
+                    </footer>
+                </div>
+            </div>
+        </div>
+        <div id="registerView" class="hidden">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="w-full max-w-md">
+                    <header class="text-center mb-8">
+                        <img src="/assets/logo-mockup.png" alt="Logo Prodex" class="mx-auto w-48 h-auto mb-4">
+                        <h1 class="font-display text-3xl text-brand-primary">Ative sua Conta</h1>
+                        <p class="text-brand-text">Crie sua conta para aceder à plataforma.</p>
+                    </header>
+                    <main class="bg-white p-8 rounded-2xl shadow-lg shadow-brand-olive/20">
+                        <form id="registerForm" class="space-y-6">
+                            <div>
+                                <label for="registerName" class="block text-sm font-medium text-brand-text">Seu Nome Completo</label>
+                                <input type="text" id="registerName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-primary focus:border-brand-primary">
+                            </div>
+                            <div>
+                                <label for="registerEmail" class="block text-sm font-medium text-brand-text">Email de Compra</label>
+                                <input type="email" id="registerEmail" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-primary focus:border-brand-primary">
+                            </div>
+                            <div>
+                                <label for="registerPassword" class="block text-sm font-medium text-brand-text">Crie uma Senha</label>
+                                <input type="password" id="registerPassword" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-primary focus:border-brand-primary">
+                            </div>
+                            <div>
+                                <label for="registerConfirmPassword" class="block text-sm font-medium text-brand-text">Confirme sua Senha</label>
+                                <input type="password" id="registerConfirmPassword" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-primary focus:border-brand-primary">
+                            </div>
+                            <div id="registerErrorMessage" class="hidden p-3 bg-red-100 text-red-700 rounded-md text-sm"></div>
+                            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-brand-primary hover:bg-brand-text focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary font-semibold">Ativar Conta</button>
+                        </form>
+                         <p class="text-center text-sm mt-6">
+                            Já tem uma conta? <a href="#" id="showLoginViewLink" class="font-medium text-brand-primary hover:underline">Faça o login</a>
+                        </p>
+                    </main>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="legalContainer" class="hidden"></div>
+
+    <div id="appView" class="hidden">
+        <div class="relative min-h-screen md:flex">
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden"></div>
+            <aside id="sidebar" class="bg-brand-bg text-brand-text w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-30">
+                <a href="#dashboard" class="nav-link text-white text-xl flex items-center px-4">
+                    <img src="/assets/logo-mockup.png" alt="Logo Prodex" class="w-32 h-auto mx-auto">
+                </a>
+                <nav>
+                    <a href="#dashboard" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-brand-primary hover:text-white bg-brand-primary/20">Página Inicial</a>
+                    <a href="#calculator" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-brand-primary hover:text-white">Calculadora de Preço</a>
+                    <a href="#my-pieces" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-brand-primary hover:text-white">Minhas Peças Salvas</a>
+                    <a href="#management" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-brand-primary hover:text-white opacity-50 cursor-not-allowed">Gestão de Encomendas</a>
+                    <a href="#stock" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-brand-primary hover:text-white opacity-50 cursor-not-allowed">Controle de Estoque</a>
+                    <a href="#settings" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-brand-primary hover:text-white">Configurações</a>
+                    <a href="#support" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-brand-primary hover:text-white">Ajuda</a>
+                </nav>
+            </aside>
+            <div class="flex-1 flex flex-col">
+                <header class="flex justify-between items-center p-4 bg-white shadow-md">
+                    <button id="sidebar-toggle" class="text-brand-text focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <div class="flex items-center gap-4">
+                        <a href="#support" class="nav-link text-brand-text hover:text-brand-primary">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.79 4 4s-1.79 4-4 4-4-1.79-4-4c0-1.167.383-2.242 1-3.121M12 12v3m0 4h.01"></path></svg>
+                        </a>
+                        <a href="#settings" class="nav-link text-brand-text hover:text-brand-primary">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </a>
+                        <button id="logoutButton" class="text-sm bg-brand-pink text-white font-semibold py-1 px-3 rounded-full hover:bg-brand-primary transition-colors">Sair</button>
+                    </div>
+                </header>
+                <div id="main-content" class="flex-1 p-4 md:p-8 overflow-y-auto"></div>
+                <footer class="text-center p-4 text-sm text-gray-500 border-t border-gray-200">
+                    <p>&copy; 2024 - Prodex</p>
+                    <p class="mt-2 space-x-2">
+                        <a href="#terms" class="nav-link hover:underline">Termos de Serviço</a> &bull; 
+                        <a href="#privacy" class="nav-link hover:underline">Política de Privacidade</a> &bull;
+                        <a href="#support" class="nav-link hover:underline">Suporte</a>
+                    </p>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <div id="welcomeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-lg w-full text-center shadow-xl">
+            <h2 class="font-display text-2xl text-brand-primary mb-4">Seja bem-vinda(o)!</h2>
+            <p class="text-brand-text mb-6">Ficamos felizes em te ver por aqui! Para começar, o primeiro passo é configurar os dados base do seu negócio na página de Configurações.</p>
+            <button id="closeWelcomeModal" class="w-full bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-brand-text transition-colors">Ir para Configurações</button>
+        </div>
+    </div>
+
+    <div id="installModal" class="hidden fixed bottom-0 inset-x-0 pb-2 sm:pb-5 z-50">
+        <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+            <div class="p-4 rounded-lg bg-brand-primary shadow-lg sm:p-6">
+                <div class="flex items-center justify-between flex-wrap">
+                    <div class="w-0 flex-1 flex items-center">
+                        <span class="flex p-2 rounded-lg bg-brand-bg">
+                            <img class="h-6 w-6" src="/assets/logo.png" alt="Logo">
+                        </span>
+                        <p class="ml-3 font-medium text-white">
+                            <span>Instale o app para uma melhor experiência!</span>
+                        </p>
+                    </div>
+                    <div class="order-3 mt-2 flex-shrink-0 w-full sm:order-2 sm:mt-0 sm:w-auto">
+                        <button id="installButton" class="flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-brand-primary bg-white hover:bg-brand-bg">
+                            Instalar
+                        </button>
+                    </div>
+                    <div class="order-2 flex-shrink-0 sm:order-3 sm:ml-2">
+                        <button id="closeInstall" type="button" class="-mr-1 flex p-2 rounded-md hover:bg-brand-primary/80 focus:outline-none focus:ring-2 focus:ring-white">
+                            <span class="sr-only">Dispensar</span>
+                            <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <template id="dashboard-template">
+        <div id="dashboardView">
+            <h1 id="welcomeMessage" class="font-display text-3xl text-brand-text mb-8"></h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <a href="#calculator" class="nav-link bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20 hover:shadow-xl transition-shadow">
+                    <h2 class="font-display text-xl text-brand-primary">Calculadora de Preço</h2>
+                    <p class="mt-2 text-sm">Calcule o preço justo de suas peças com confiança e garanta seu lucro.</p>
+                </a>
+                <a href="#my-pieces" class="nav-link bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20 hover:shadow-xl transition-shadow">
+                    <h2 class="font-display text-xl text-brand-primary">Minhas Peças Salvas</h2>
+                    <p class="mt-2 text-sm">Acesse seu catálogo de produtos com preços já calculados.</p>
+                </a>
+                <a href="#management" class="nav-link bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20 opacity-50 cursor-not-allowed">
+                    <h2 class="font-display text-xl text-brand-text">Gestão de Encomendas</h2>
+                    <p class="mt-2 text-sm">Organize seus pedidos e acompanhe o status de cada um. (Em breve)</p>
+                </a>
+                <a href="#stock" class="nav-link bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20 opacity-50 cursor-not-allowed">
+                    <h2 class="font-display text-xl text-brand-text">Controle de Estoque</h2>
+                    <p class="mt-2 text-sm">Saiba exatamente quais materiais você tem e quando precisa comprar mais. (Em breve)</p>
+                </a>
+            </div>
+        </div>
+    </template>
+    <template id="calculator-template">
+        <div id="calculatorView">
+            <main class="space-y-8">
+                <div id="restoreBanner" class="hidden bg-brand-olive/20 p-4 rounded-lg flex items-center justify-between">
+                    <p class="text-brand-text font-medium">Encontramos um cálculo não salvo. Deseja restaurá-lo?</p>
+                    <div>
+                        <button id="restoreYes" class="bg-brand-primary text-white px-3 py-1 rounded-md text-sm font-semibold mr-2">Sim</button>
+                        <button id="restoreNo" class="bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm">Não</button>
+                    </div>
+                </div>
+                <section class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20">
+                    <h2 class="font-display text-2xl text-brand-text mb-4 flex items-center">
+                        <span class="text-3xl mr-3">1.</span> Custos da Peça
+                    </h2>
+                    <div>
+                        <label for="pieceName" class="block text-sm font-medium text-brand-text">Nome da Peça</label>
+                        <p class="text-xs text-gray-500 mt-1">Dê um nome para este cálculo (Ex: Jogo Americano Floral).</p>
+                        <input type="text" id="pieceName" class="piece-input w-full mt-2 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-brand-primary focus:border-brand-primary" placeholder="Jogo Americano Floral">
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-brand-text mt-6 mb-2">A. Custo dos Materiais</h3>
+                    <div id="materialsContainer" class="space-y-4"></div>
+                    <button id="addMaterial" class="mt-4 text-sm text-brand-primary hover:text-brand-text font-medium">+ Adicionar Material</button>
+                    <div class="mt-4 text-right bg-gray-50 p-2 rounded-md">
+                        <span class="font-medium text-gray-600">Subtotal de Materiais:</span>
+                        <span id="materialsSubtotal" class="font-bold text-gray-800 ml-2">R$ 0,00</span>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-brand-text mt-6 mb-2">B. Custo da Mão de Obra</h3>
+                    <div id="tasksContainer" class="space-y-4"></div>
+                    <button id="addTask" class="mt-4 text-sm text-brand-primary hover:text-brand-text font-medium">+ Adicionar Tarefa</button>
+                    <div class="mt-4 text-right bg-gray-50 p-2 rounded-md">
+                        <span class="font-medium text-gray-600">Tempo Total de Produção:</span>
+                        <span id="totalTime" class="font-bold text-gray-800 ml-2">0 min</span>
+                    </div>
+                </section>
+                <section class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20">
+                    <h2 class="font-display text-2xl text-brand-text mb-4 flex items-center">
+                       <span class="text-3xl mr-3">2.</span> Resumo dos Custos
+                    </h2>
+                     <div class="mt-4 bg-brand-bg p-3 rounded-lg text-center mb-4">
+                        <p class="text-sm text-brand-text">Custo Fixo por Hora (configurado por você):</p>
+                        <p id="fixedCostPerHour" class="text-lg font-bold text-brand-text">R$ 0,00</p>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded-md">
+                            <span class="font-medium text-gray-600">Custo Total de Materiais</span>
+                            <span id="summaryMaterials" class="font-bold text-lg text-gray-800">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded-md">
+                            <span class="font-medium text-gray-600">Custo Total da Mão de Obra</span>
+                            <span id="summaryLabor" class="font-bold text-lg text-gray-800">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded-md">
+                            <span class="font-medium text-gray-600">Custo Fixo da Peça</span>
+                            <span id="summaryFixed" class="font-bold text-lg text-gray-800">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-brand-olive/20 p-4 rounded-lg mt-2">
+                            <span class="font-bold text-brand-text text-lg">CUSTO DE PRODUÇÃO DA PEÇA</span>
+                            <span id="productionCost" class="font-extrabold text-2xl text-brand-text">R$ 0,00</span>
+                        </div>
+                    </div>
+                </section>
+                <section class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20">
+                    <h2 class="font-display text-2xl text-brand-text mb-4 flex items-center">
+                        <span class="text-3xl mr-3">3.</span> Preço Final de Venda
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                        <div>
+                            <label for="profitMargin" class="block text-sm font-medium text-brand-text">Sua Margem de Lucro (%)</label>
+                            <p class="text-xs text-gray-500 mt-1">Quanto você quer lucrar sobre o custo. 100% é um bom começo.</p>
+                            <input type="text" inputmode="decimal" id="profitMargin" class="numeric-input piece-input w-full mt-2 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-brand-primary focus:border-brand-primary" value="100">
+                        </div>
+                        <div>
+                            <label for="fees" class="block text-sm font-medium text-brand-text">Taxas (%)</label>
+                            <p class="text-xs text-gray-500 mt-1">Taxas de cartão, marketplace, etc.</p>
+                            <input type="text" inputmode="decimal" id="fees" class="numeric-input piece-input w-full mt-2 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-brand-primary focus:border-brand-primary" value="0">
+                        </div>
+                    </div>
+                    <div class="mt-6 space-y-4">
+                        <div class="bg-brand-primary text-white p-6 rounded-2xl text-center">
+                            <p class="font-semibold text-lg opacity-90">PREÇO DE VENDA FINAL (SUGERIDO)</p>
+                            <p id="finalPrice" class="font-extrabold text-5xl tracking-tight">R$ 0,00</p>
+                        </div>
+                        <div class="bg-brand-pink/30 border-l-4 border-brand-pink text-brand-text p-4 rounded-r-lg">
+                            <div class="flex justify-between items-center">
+                                <p class="font-bold text-lg">LUCRO LÍQUIDO POR PEÇA:</p>
+                                <p id="netProfit" class="font-bold text-2xl">R$ 0,00</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <div class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20">
+                    <button id="savePieceButton" class="w-full bg-brand-olive text-white font-bold py-3 px-4 rounded-lg hover:bg-brand-text transition-colors flex items-center justify-center text-lg">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                        Salvar Peça no Catálogo
+                    </button>
+                </div>
+                <section class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20">
+                    <h2 class="font-display text-2xl text-brand-text mb-4 flex items-center">
+                       <span class="text-3xl mr-3">4.</span> Assistente de Vendas IA ✨
+                    </h2>
+                    <p class="text-gray-600 mb-6">Use a inteligência artificial para criar textos de venda e ter ideias para divulgar seu produto. Preencha os dados da peça acima e clique nos botões abaixo.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-display text-lg font-semibold text-brand-text">Descrição Mágica para Redes Sociais</h3>
+                            <button id="generateDescription" class="w-full mt-2 bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-brand-text transition-colors flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                Gerar Descrição
+                            </button>
+                            <div class="relative mt-4 p-4 bg-gray-50 rounded-md text-gray-700 min-h-[150px] border flex items-center justify-center">
+                                <button class="copy-ai-btn absolute top-2 right-2 p-1 text-gray-400 hover:text-brand-primary hidden" data-target="descriptionText">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                                <div id="descriptionLoader" class="loader hidden absolute"></div>
+                                <span id="descriptionText" class="text-center">✨ Clique em 'Gerar Descrição' e veja a mágica acontecer! Criaremos um texto de venda encantador para sua peça.</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-display text-lg font-semibold text-brand-text">Ideias Criativas para Vender Mais</h3>
+                            <button id="generateSuggestions" class="w-full mt-2 bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-brand-text transition-colors flex items-center justify-center">
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.121-3.536a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM4.95 16.464l.707-.707a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414zm-3.536-2.121a1 1 0 010-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414 0zM10 18a1 1 0 01-1-1v-1a1 1 0 112 0v1a1 1 0 01-1 1z" clip-rule="evenodd" /></svg>
+                                Gerar Ideias
+                            </button>
+                            <div class="relative mt-4 p-4 bg-gray-50 rounded-md text-gray-700 min-h-[150px] border flex items-center justify-center">
+                                <button class="copy-ai-btn absolute top-2 right-2 p-1 text-gray-400 hover:text-brand-primary hidden" data-target="suggestionsText">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                                <div id="suggestionsLoader" class="loader hidden absolute"></div>
+                                <span id="suggestionsText" class="text-center">💡 Sem inspiração? Clique em 'Gerar Ideias' para descobrir novas formas de divulgar e vender seu produto!</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </template>
+    <template id="my-pieces-template">
+        <div id="myPiecesView">
+            <h1 class="font-display text-3xl text-brand-text mb-8">Minhas Peças Salvas</h1>
+            <div id="savedPiecesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="noPiecesMessage" class="hidden text-center mt-8">
+                <p class="text-lg text-gray-600">Você ainda não salvou nenhuma peça.</p>
+                <a href="#calculator" class="nav-link mt-4 inline-block bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-brand-text transition-colors">Calcular minha primeira peça</a>
+            </div>
+        </div>
+    </template>
+    <template id="settings-template">
+        <div id="settingsView">
+            <h1 class="font-display text-3xl text-brand-text mb-8">Configurações</h1>
+            <div class="space-y-8 max-w-2xl mx-auto">
+                <section class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20">
+                    <h2 class="font-display text-2xl text-brand-text mb-4">Meu Perfil</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="profileName" class="block text-sm font-medium text-brand-text">Seu Nome</label>
+                            <input type="text" id="profileName" class="w-full mt-1 p-2 border border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label for="profileEmail" class="block text-sm font-medium text-brand-text">Email</label>
+                            <input type="email" id="profileEmail" disabled class="w-full mt-1 p-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed">
+                        </div>
+                        <button id="saveProfileButton" class="bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-brand-text transition-colors">Salvar Perfil</button>
+                    </div>
+                </section>
+                
+                <section class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-display text-2xl text-brand-text">Dados do Negócio</h2>
+                        <span id="settingsStatus" class="saved-status text-sm font-medium text-brand-olive opacity-0 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Salvo!</span>
+                        </span>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="settingsHourlyRate" class="block text-sm font-medium text-brand-text">Valor da sua Hora de Trabalho</label>
+                            <p class="text-xs text-gray-500 mt-1">Quanto você deseja receber por cada hora dedicada à produção.</p>
+                            <div class="relative mt-1 input-group">
+                                <span class="input-prefix">R$</span>
+                                <input type="text" inputmode="decimal" id="settingsHourlyRate" class="settings-input numeric-input w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="20,00">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="settingsFixedCosts" class="block text-sm font-medium text-brand-text">Custos Fixos Mensais</label>
+                            <p class="text-xs text-gray-500 mt-1">Soma de todas as suas despesas mensais fixas (luz, internet, aluguel, etc.).</p>
+                            <div class="relative mt-1 input-group">
+                                 <span class="input-prefix">R$</span>
+                                <input type="text" inputmode="decimal" id="settingsFixedCosts" class="settings-input numeric-input w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="300,00">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="settingsHoursWorked" class="block text-sm font-medium text-brand-text">Horas Trabalhadas por Mês</label>
+                            <p class="text-xs text-gray-500 mt-1">Total de horas que você dedica ao seu negócio por mês.</p>
+                            <input type="text" inputmode="decimal" id="settingsHoursWorked" class="settings-input numeric-input w-full mt-1 p-2 border border-gray-300 rounded-md shadow-sm" placeholder="80">
+                        </div>
+                    </div>
+                     <button id="saveAtelierButton" class="mt-4 w-full bg-brand-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-brand-text transition-colors">Salvar Dados</button>
+                </section>
+                <section class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20">
+                    <h2 class="font-display text-2xl text-brand-text mb-4">Minha Assinatura</h2>
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <p class="text-sm text-brand-text">Seu acesso a esta ferramenta é válido até:</p>
+                        <p id="expirationDate" class="text-lg font-bold text-brand-primary mt-1">Carregando...</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </template>
+    <template id="coming-soon-template">
+        <div class="text-center">
+            <h1 class="font-display text-3xl text-brand-text mb-4">Em Breve</h1>
+            <p class="text-lg text-gray-600">Esta funcionalidade está sendo preparada com muito carinho e estará disponível em breve!</p>
+        </div>
+    </template>
+    <template id="support-template">
+        <div id="supportView" class="max-w-4xl mx-auto">
+            <h1 class="font-display text-3xl text-brand-text mb-8">Página de Ajuda e Suporte</h1>
+            <div class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20 space-y-6 legal-content">
+                <h2>Como Usar a Calculadora</h2>
+                <p>Siga estes passos para precificar suas peças de forma correta e garantir seu lucro.</p>
+                <ol class="list-decimal list-inside space-y-4">
+                    <li><strong>Configure seu Negócio:</strong> Antes de tudo, vá para a página de <a href="#settings" class="nav-link text-brand-primary underline">Configurações</a> e preencha os "Dados do Negócio". Esta é a base para todos os seus cálculos.</li>
+                    <li><strong>Custos da Peça:</strong> Na <a href="#calculator" class="nav-link text-brand-primary underline">Calculadora</a>, comece dando um nome para a sua peça.</li>
+                    <li><strong>Adicione os Materiais:</strong> Clique em "+ Adicionar Material" para cada item usado. Coloque o preço que você pagou pelo material (ex: o preço do metro de tecido) e a quantidade que usou na peça (ex: 0.5 para meio metro).</li>
+                    <li><strong>Adicione as Tarefas:</strong> Clique em "+ Adicionar Tarefa" e descreva cada etapa da produção (cortar, costurar, embalar) e o tempo em minutos que levou em cada uma.</li>
+                    <li><strong>Defina seu Lucro:</strong> Na seção "Preço Final de Venda", defina sua margem de lucro. 100% é um bom ponto de partida, o que significa que você vai dobrar o custo de produção.</li>
+                    <li><strong>Salve sua Peça:</strong> Gostou do resultado? Clique em "Salvar Peça no Catálogo" para guardar este cálculo e consultá-lo sempre que precisar na página "Minhas Peças Salvas".</li>
+                </ol>
+
+                <h2 class="pt-6">Videoaula Completa</h2>
+                <p>Em breve, uma videoaula completa estará disponível aqui para guiá-la visualmente por todo o processo.</p>
+                <div class="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <p class="text-gray-500">Espaço reservado para o vídeo do YouTube</p>
+                </div>
+
+                <h2 class="pt-6">Perguntas Frequentes (FAQ)</h2>
+                <h3>Como defino o valor da minha hora?</h3>
+                <p>Uma boa base é pesquisar o salário médio de um profissional da sua área na sua região e dividir pelas horas trabalhadas no mês. Comece com um valor que você se sinta confortável e ajuste conforme sua experiência e a demanda pelos seus produtos aumentam.</p>
+                <h3>O que são custos fixos?</h3>
+                <p>São todas as despesas que você tem todo mês, independentemente de produzir ou não, como aluguel do espaço, luz, internet, a mensalidade deste aplicativo, etc. Some tudo para ter seu custo fixo mensal.</p>
+
+                <h2 class="pt-6">Canais de Atendimento</h2>
+                <p>Ainda com dúvidas? Entre em contato pelos nossos canais:</p>
+                <ul class="space-y-2">
+                    <li><strong>Instagram:</strong> <a href="https://instagram.com/prodexoficial" target="_blank" class="text-brand-primary hover:underline">@prodexoficial</a></li>
+                    <li><strong>E-mail:</strong> <a href="mailto:contato.prodex@gmail.com" class="text-brand-primary hover:underline">contato.prodex@gmail.com</a></li>
+					<li><strong>WhatsApp:</strong> <a href="https://wa.me/5548996081230" target="_blank" class="text-brand-primary hover:underline">Clique aqui para conversar</a></li>
+                </ul>
+            </div>
+        </div>
+    </template>
+    <template id="terms-template">
+        <div class="max-w-4xl mx-auto legal-content">
+            <div class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20 space-y-4">
+                <h2>Termos de Serviço</h2>
+                <p><strong>Última atualização: 19 de agosto de 2025</strong></p>
+                <p>Bem-vinda(o) à Calculadora de Precificação Automática. Ao utilizar nosso aplicativo, você concorda com estes Termos de Serviço. Por favor, leia-os com atenção.</p>
+                <h3>1. Uso da Conta</h3>
+                <p>Sua conta é pessoal e intransferível. Você é responsável por manter a confidencialidade de sua senha e por todas as atividades que ocorrerem em sua conta. O acesso é limitado a um único usuário por assinatura.</p>
+                <h3>2. Assinatura e Acesso</h3>
+                <p>O acesso ao aplicativo é concedido através de uma assinatura paga, com validade de 1 (um) ano a partir da data da compra. A não renovação da assinatura resultará na suspensão do acesso às funcionalidades do aplicativo.</p>
+                <h3>3. Propriedade Intelectual</h3>
+                <p>Todo o conteúdo, design e funcionalidades do aplicativo são propriedade da Prodex. Você não pode copiar, modificar ou distribuir o conteúdo sem nossa permissão explícita.</p>
+                <h3>4. Limitação de Responsabilidade</h3>
+                <p>O aplicativo é uma ferramenta de auxílio. Os cálculos de preço são sugestões baseadas nos dados que você insere. Não nos responsabilizamos por quaisquer perdas financeiras ou decisões de negócio tomadas com base nas informações fornecidas pelo aplicativo.</p>
+            </div>
+        </div>
+    </template>
+    <template id="privacy-template">
+        <div class="max-w-4xl mx-auto legal-content">
+            <div class="bg-white p-6 rounded-2xl shadow-lg shadow-brand-olive/20 space-y-4">
+                <h2>Política de Privacidade</h2>
+                <p><strong>Última atualização: 19 de agosto de 2025</strong></p>
+                <p>A sua privacidade é importante para nós. Esta política explica quais dados coletamos e como os utilizamos.</p>
+                <h3>1. Dados que Coletamos</h3>
+                <p>Coletamos as informações que você nos fornece durante o cadastro e uso do aplicativo, incluindo:</p>
+                <ul>
+                    <li>Nome e endereço de e-mail.</li>
+                    <li>Dados inseridos na calculadora (materiais, tarefas, custos, etc.).</li>
+                    <li>Dados de peças salvas.</li>
+                </ul>
+                <h3>2. Como Usamos os Dados</h3>
+                <p>Utilizamos seus dados para:</p>
+                <ul>
+                    <li>Fornecer e manter os serviços do aplicativo.</li>
+                    <li>Gerenciar sua conta e sua assinatura.</li>
+                    <li>Comunicar sobre atualizações ou informações importantes.</li>
+                </ul>
+                <h3>3. Armazenamento de Dados</h3>
+                <p>Seus dados são armazenados de forma segura utilizando a plataforma Firebase do Google. Nós não compartilhamos suas informações pessoais com terceiros, exceto quando necessário para a prestação do serviço ou por exigência legal.</p>
+            </div>
+        </div>
+    </template>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, fetchSignInMethodsForEmail, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        if ('serviceWorker' in navigator) {
+            let refreshing;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                window.location.reload();
+                refreshing = true;
+            });
+
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').then(registration => {
+                    console.log('ServiceWorker registado com sucesso: ', registration.scope);
+                    setInterval(() => {
+                        registration.update();
+                    }, 1000 * 60 * 60);
+                }, err => {
+                    console.log('Registo do ServiceWorker falhou: ', err);
+                });
+            });
+        }
+        
+        let deferredPrompt;
+        const installModal = document.getElementById('installModal');
+        const installButton = document.getElementById('installButton');
+        const closeInstallButton = document.getElementById('closeInstall');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const lastDismissed = localStorage.getItem('installPromptDismissed');
+            const oneWeek = 7 * 24 * 60 * 60 * 1000;
+            if (lastDismissed && (Date.now() - lastDismissed < oneWeek)) {
+                return;
+            }
+            installModal.classList.remove('hidden');
+        });
+
+        installButton.addEventListener('click', async () => {
+            installModal.classList.add('hidden');
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            }
+        });
+
+        closeInstallButton.addEventListener('click', () => {
+            installModal.classList.add('hidden');
+            localStorage.setItem('installPromptDismissed', Date.now());
+        });
+
+        function showToast(message, type = 'success') {
+            const colors = {
+                success: 'linear-gradient(to right, #00b09b, #96c93d)',
+                error: 'linear-gradient(to right, #ff5f6d, #ffc371)',
+                info: 'linear-gradient(to right, #0072ff, #00c6ff)'
+            };
+            Toastify({
+                text: message,
+                duration: 4000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                stopOnFocus: true,
+                style: {
+                    background: colors[type] || colors.info,
+                },
+            }).showToast();
+        }
+
+        function setLoading(button, isLoading, originalText) {
+            if (isLoading) {
+                button.disabled = true;
+                button.classList.add('btn-loading');
+                button.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Aguarde...`;
+            } else {
+                button.disabled = false;
+                button.classList.remove('btn-loading');
+                button.innerHTML = originalText;
+            }
+        }
+
+        function copyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Texto copiado!', 'success');
+            } catch (err) {
+                showToast('Falha ao copiar o texto.', 'error');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        async function getFirebaseConfig() {
+            try {
+                const response = await fetch('/api/get-firebase-config');
+                if (!response.ok) throw new Error('Falha ao buscar configuração do Firebase.');
+                return await response.json();
+            } catch (error) {
+                console.error(error);
+                return null;
+            }
+        }
+
+        async function main() {
+            const authContainer = document.getElementById('authContainer');
+            const appView = document.getElementById('appView');
+            const legalContainer = document.getElementById('legalContainer');
+            
+            const firebaseConfig = await getFirebaseConfig();
+            if (!firebaseConfig) {
+                document.body.classList.remove('loading');
+                authContainer.style.display = 'block';
+                const loginErrorMessage = document.getElementById('loginErrorMessage');
+                loginErrorMessage.textContent = 'Erro de configuração. Não foi possível carregar a página.';
+                loginErrorMessage.classList.remove('hidden');
+                return;
+            }
+
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            
+            let currentUser = null;
+            let atelierDataRef = null;
+            let piecesCollectionRef = null;
+            let atelierData = {};
+
+            onAuthStateChanged(auth, (user) => {
+                document.body.classList.remove('loading');
+                if (user) {
+                    const authorizedEmailRef = doc(db, "authorizedEmails", user.email);
+                    getDoc(authorizedEmailRef).then(docSnap => {
+                        if (docSnap.exists()) {
+                            const userData = docSnap.data();
+                            const expirationDate = userData.expirationDate.toDate();
+                            const now = new Date();
+
+                            if (now < expirationDate) {
+                                currentUser = user;
+                                atelierDataRef = doc(db, "atelierData", user.uid);
+                                piecesCollectionRef = collection(db, "atelierData", currentUser.uid, "pieces");
+                                authContainer.style.display = 'none';
+                                legalContainer.style.display = 'none';
+                                appView.style.display = 'block';
+                                
+                                const currentHash = window.location.hash;
+                                loadUserDataAndNavigate(currentHash === '' || currentHash === '#');
+                            } else {
+                                showToast('Seu acesso expirou. Por favor, renove sua assinatura.', 'error');
+                                signOut(auth);
+                            }
+                        } else {
+                            showToast('Não foi possível verificar sua autorização.', 'error');
+                            signOut(auth);
+                        }
+                    }).catch(error => {
+                        console.error("Erro ao verificar acesso:", error);
+                        showToast('Ocorreu um erro ao verificar seu acesso.', 'error');
+                        signOut(auth);
+                    });
+                } else {
+                    currentUser = null;
+                    authContainer.style.display = 'block';
+                    appView.style.display = 'none';
+                    const currentHash = window.location.hash.substring(1);
+                    if (['terms', 'privacy', 'support'].includes(currentHash)) {
+                        navigate(window.location.hash);
+                    }
+                }
+            });
+
+            const loginView = document.getElementById('loginView');
+            const registerView = document.getElementById('registerView');
+            document.getElementById('showRegisterViewLink').addEventListener('click', (e) => {
+                e.preventDefault();
+                loginView.classList.add('hidden');
+                registerView.classList.remove('hidden');
+            });
+
+            document.getElementById('showLoginViewLink').addEventListener('click', (e) => {
+                e.preventDefault();
+                registerView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+            });
+
+            const loginForm = document.getElementById('loginForm');
+            const loginButton = loginForm.querySelector('button[type="submit"]');
+            const originalLoginButtonText = loginButton.innerHTML;
+            
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                setLoading(loginButton, true, originalLoginButtonText);
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                signInWithEmailAndPassword(auth, email, password)
+                    .catch((error) => {
+                        document.getElementById('loginErrorMessage').textContent = 'Email ou senha inválidos.';
+                        document.getElementById('loginErrorMessage').classList.remove('hidden');
+                    })
+                    .finally(() => {
+                        setLoading(loginButton, false, originalLoginButtonText);
+                    });
+            });
+
+            const registerForm = document.getElementById('registerForm');
+            const registerButton = registerForm.querySelector('button[type="submit"]');
+            const originalRegisterButtonText = registerButton.innerHTML;
+            
+            registerForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                setLoading(registerButton, true, originalRegisterButtonText);
+                const name = document.getElementById('registerName').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const confirmPassword = document.getElementById('registerConfirmPassword').value;
+                const registerErrorDiv = document.getElementById('registerErrorMessage');
+
+                if (password !== confirmPassword) {
+                    registerErrorDiv.textContent = 'As senhas não coincidem.';
+                    registerErrorDiv.classList.remove('hidden');
+                    setLoading(registerButton, false, originalRegisterButtonText);
+                    return;
+                }
+
+                if (!name || password.length < 6) {
+                    registerErrorDiv.textContent = !name ? 'Por favor, insira seu nome.' : 'A senha deve ter pelo menos 6 caracteres.';
+                    registerErrorDiv.classList.remove('hidden');
+                    setLoading(registerButton, false, originalRegisterButtonText);
+                    return;
+                }
+
+                const authorizedEmailRef = doc(db, "authorizedEmails", email);
+                getDoc(authorizedEmailRef).then((docSnap) => {
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        const expirationDate = userData.expirationDate.toDate(); 
+                        const now = new Date();
+
+                        if (now < expirationDate) {
+                            createUserWithEmailAndPassword(auth, email, password)
+                                .then(async (userCredential) => {
+                                    await updateProfile(userCredential.user, { displayName: name });
+                                    await setDoc(doc(db, "atelierData", userCredential.user.uid), { name: name, hasLoggedInBefore: false }, { merge: true });
+                                    registerErrorDiv.classList.add('hidden');
+                                })
+                                .catch((error) => {
+                                    registerErrorDiv.textContent = error.code === 'auth/email-already-in-use' ? "Este email já está cadastrado. Tente fazer o login." : "Ocorreu um erro ao criar a sua conta.";
+                                    registerErrorDiv.classList.remove('hidden');
+                                })
+                                .finally(() => {
+                                    setLoading(registerButton, false, originalRegisterButtonText);
+                                });
+                        } else {
+                            registerErrorDiv.textContent = 'O seu acesso a esta ferramenta expirou. Por favor, renove a sua assinatura para se cadastrar.';
+                            registerErrorDiv.classList.remove('hidden');
+                            setLoading(registerButton, false, originalRegisterButtonText);
+                        }
+                    } else {
+                        registerErrorDiv.textContent = 'E-mail não autorizado. Por favor, utilize o mesmo e-mail que usou na sua compra na Hotmart.';
+                        registerErrorDiv.classList.remove('hidden');
+                        setLoading(registerButton, false, originalRegisterButtonText);
+                    }
+                }).catch((error) => {
+                    console.error("Erro ao verificar autorização: ", error);
+                    registerErrorDiv.textContent = 'Ocorreu um erro ao verificar a permissão do seu e-mail. Tente novamente mais tarde.';
+                    registerErrorDiv.classList.remove('hidden');
+                    setLoading(registerButton, false, originalRegisterButtonText);
+                });
+            });
+            
+            document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                if (!email) {
+                    showToast('Por favor, insira o seu e-mail no campo acima antes de clicar aqui.', 'error');
+                    return;
+                }
+                sendPasswordResetEmail(auth, email)
+                    .then(() => {
+                        showToast('E-mail de recuperação de senha enviado! Verifique sua caixa de entrada.', 'success');
+                    })
+                    .catch((error) => {
+                        console.error("Erro ao enviar e-mail de recuperação:", error);
+                        showToast('Não foi possível enviar o e-mail de recuperação. Tente novamente.', 'error');
+                    });
+            });
+            
+            document.getElementById('logoutButton').addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    window.location.hash = '';
+                    window.location.reload(); 
+                }).catch((error) => console.error("Erro ao sair:", error));
+            });
+            
+            async function loadUserDataAndNavigate(isFirstLoad = false) {
+                if (!atelierDataRef) return;
+                try {
+                    const docSnap = await getDoc(atelierDataRef);
+                    if (docSnap.exists()) {
+                        atelierData = docSnap.data();
+                        if (!atelierData.hasLoggedInBefore) {
+                            document.getElementById('welcomeModal').classList.remove('hidden');
+                        }
+                    } else {
+                        document.getElementById('welcomeModal').classList.remove('hidden');
+                    }
+                    const hash = isFirstLoad ? '#dashboard' : (window.location.hash || '#dashboard');
+                    navigate(hash);
+                } catch (error) {
+                    console.error("Erro ao carregar dados do usuário:", error);
+                }
+            }
+
+            document.getElementById('closeWelcomeModal').addEventListener('click', () => {
+                document.getElementById('welcomeModal').classList.add('hidden');
+                if (atelierDataRef) {
+                    setDoc(atelierDataRef, { hasLoggedInBefore: true }, { merge: true });
+                }
+                navigate('#settings');
+            });
+
+            const callAIAssistant = async (dataPayload, button) => {
+                const proxyUrl = '/api/gemini-proxy';
+                const copyButton = button.nextElementSibling.querySelector('.copy-ai-btn');
+                try {
+                    const response = await fetch(proxyUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dataPayload) });
+                    if (!response.ok) throw new Error(`Erro: ${response.statusText}`);
+                    const result = await response.json();
+                    copyButton.classList.remove('hidden');
+                    return result.text;
+                } catch (error) {
+                    console.error("Erro no assistente IA:", error);
+                    copyButton.classList.add('hidden');
+                    return "Desculpe, não foi possível gerar a resposta no momento.";
+                }
+            };
+            
+            function setupCalculator() {
+                const calculatorNode = document.getElementById('calculatorView');
+                if (!calculatorNode) return;
+
+                const materialsContainer = calculatorNode.querySelector('#materialsContainer');
+                const tasksContainer = calculatorNode.querySelector('#tasksContainer');
+                const addMaterialBtn = calculatorNode.querySelector('#addMaterial');
+                const addTaskBtn = calculatorNode.querySelector('#addTask');
+
+                const addMaterialRow = (name = '', price = '', quantity = '') => {
+                    const materialCount = materialsContainer.querySelectorAll('.material-row').length + 1;
+                    const div = document.createElement('div');
+                    div.classList.add('relative', 'border', 'rounded-lg', 'material-row', 'overflow-hidden');
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center bg-brand-bg/60 p-2">
+                            <h4 class="font-bold text-brand-text">Material ${materialCount}</h4>
+                            <button class="remove-btn text-red-400 hover:text-red-600 font-bold text-2xl leading-none px-2">&times;</button>
+                        </div>
+                        <div class="p-4 space-y-2">
+                            <div class="w-full"> <label class="text-sm font-medium text-brand-text">Nome do Material</label> <p class="text-xs text-gray-500 mt-1">Ex: Tecido Tricoline, Linha, Zíper.</p> <input type="text" value="${name}" class="material-name piece-input w-full p-2 mt-1 border border-gray-200 rounded-md text-sm"> </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div> <label class="text-sm font-medium text-brand-text">Preço</label> <p class="text-xs text-gray-500 mt-1">Preço do item comprado (metro, unidade).</p> <div class="relative mt-1 input-group"> <span class="input-prefix text-sm">R$</span> <input type="text" value="${price}" inputmode="decimal" placeholder="30,00" class="numeric-input piece-input material-price w-full p-2 border border-gray-200 rounded-md text-sm"> </div> </div>
+                                <div> <label class="text-sm font-medium text-brand-text">Qtd. Usada</label> <p class="text-xs text-gray-500 mt-1">Fração usada (ex: 0.45 para 45cm).</p> <input type="text" value="${quantity}" inputmode="decimal" placeholder="0,45" class="numeric-input piece-input material-quantity w-full p-2 mt-1 border border-gray-200 rounded-md text-sm"> </div>
+                            </div>
+                        </div>`;
+                    materialsContainer.appendChild(div);
+                    div.querySelector('.remove-btn').addEventListener('click', () => { 
+                        div.remove(); 
+                        materialsContainer.querySelectorAll('.material-row').forEach((row, index) => {
+                            row.querySelector('h4').textContent = `Material ${index + 1}`;
+                        });
+                        calculateAll(); 
+                        savePieceToLocalStorage(); 
+                    });
+                };
+
+                const addTaskRow = (name = '', time = '') => {
+                    const taskCount = tasksContainer.querySelectorAll('.task-row').length + 1;
+                    const div = document.createElement('div');
+                    div.classList.add('relative', 'border', 'rounded-lg', 'task-row', 'overflow-hidden');
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center bg-brand-bg/60 p-2">
+                            <h4 class="font-bold text-brand-text">Tarefa ${taskCount}</h4>
+                            <button class="remove-btn text-red-400 hover:text-red-600 font-bold text-2xl leading-none px-2">&times;</button>
+                        </div>
+                        <div class="p-4 space-y-2">
+                            <div class="w-full"> <label class="text-sm font-medium text-brand-text">Nome da Tarefa</label> <p class="text-xs text-gray-500 mt-1">Ex: Cortar, Costurar, Acabamento.</p> <input type="text" value="${name}" class="task-name piece-input w-full p-2 mt-1 border border-gray-200 rounded-md text-sm"> </div>
+                            <div> <label class="text-sm font-medium text-brand-text">Tempo (minutos)</label> <p class="text-xs text-gray-500 mt-1">Quanto tempo levou nesta tarefa.</p> <input type="text" value="${time}" inputmode="decimal" placeholder="40" class="numeric-input piece-input task-time w-full p-2 mt-1 border border-gray-200 rounded-md text-sm"> </div>
+                        </div>`;
+                    tasksContainer.appendChild(div);
+                    div.querySelector('.remove-btn').addEventListener('click', () => { 
+                        div.remove(); 
+                        tasksContainer.querySelectorAll('.task-row').forEach((row, index) => {
+                            row.querySelector('h4').textContent = `Tarefa ${index + 1}`;
+                        });
+                        calculateAll(); 
+                        savePieceToLocalStorage(); 
+                    });
+                };
+
+                addMaterialBtn.addEventListener('click', () => addMaterialRow());
+                addTaskBtn.addEventListener('click', () => addTaskRow());
+
+                const calculateAll = () => {
+                    const hourlyRate = parseFloat(atelierData.hourlyRate?.replace(',', '.')) || 0;
+                    const fixedCosts = parseFloat(atelierData.fixedCosts?.replace(',', '.')) || 0;
+                    const hoursWorked = parseFloat(atelierData.hoursWorked?.replace(',', '.')) || 0;
+                    const fixedCostPerHour = hoursWorked > 0 ? fixedCosts / hoursWorked : 0;
+                    calculatorNode.querySelector('#fixedCostPerHour').textContent = formatCurrency(fixedCostPerHour);
+
+                    let materialsSubtotal = 0;
+                    calculatorNode.querySelectorAll('.material-row').forEach(row => {
+                        const price = parseFloat(row.querySelector('.material-price').value.replace(',', '.')) || 0;
+                        const quantity = parseFloat(row.querySelector('.material-quantity').value.replace(',', '.')) || 0;
+                        materialsSubtotal += price * quantity;
+                    });
+                    calculatorNode.querySelector('#materialsSubtotal').textContent = formatCurrency(materialsSubtotal);
+
+                    let totalMinutes = 0;
+                    calculatorNode.querySelectorAll('.task-row').forEach(row => {
+                        totalMinutes += parseFloat(row.querySelector('.task-time').value.replace(',', '.')) || 0;
+                    });
+                    const totalHours = totalMinutes / 60;
+                    calculatorNode.querySelector('#totalTime').textContent = `${Math.round(totalMinutes)} min`;
+                    const laborCost = totalHours * hourlyRate;
+
+                    const pieceFixedCost = totalHours * fixedCostPerHour;
+                    const productionCost = materialsSubtotal + laborCost + pieceFixedCost;
+                    calculatorNode.querySelector('#summaryMaterials').textContent = formatCurrency(materialsSubtotal);
+                    calculatorNode.querySelector('#summaryLabor').textContent = formatCurrency(laborCost);
+                    calculatorNode.querySelector('#summaryFixed').textContent = formatCurrency(pieceFixedCost);
+                    calculatorNode.querySelector('#productionCost').textContent = formatCurrency(productionCost);
+
+                    const profitMargin = parseFloat(calculatorNode.querySelector('#profitMargin').value.replace(',', '.')) || 0;
+                    const fees = parseFloat(calculatorNode.querySelector('#fees').value.replace(',', '.')) || 0;
+                    
+                    const basePrice = productionCost * (1 + profitMargin / 100);
+                    const finalPrice = fees > 0 && fees < 100 ? basePrice / (1 - fees / 100) : basePrice;
+                    const feeValue = finalPrice * (fees / 100);
+                    const netProfit = finalPrice - feeValue - productionCost;
+
+                    calculatorNode.querySelector('#finalPrice').textContent = formatCurrency(finalPrice);
+                    calculatorNode.querySelector('#netProfit').textContent = formatCurrency(netProfit);
+                };
+
+                function setNumericInputFilter(inputElement) {
+                    inputElement.addEventListener('input', function(e) {
+                        let value = e.target.value.replace(/[^0-9.,]/g, '').replace(/,/g, '.');
+                        const parts = value.split('.');
+                        if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
+                        e.target.value = value;
+                        calculateAll();
+                    });
+                }
+                
+                calculatorNode.querySelectorAll('.numeric-input').forEach(setNumericInputFilter);
+                
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.nodeType === 1) node.querySelectorAll('.numeric-input').forEach(setNumericInputFilter);
+                        });
+                    });
+                });
+
+                observer.observe(materialsContainer, { childList: true });
+                observer.observe(tasksContainer, { childList: true });
+                
+                calculatorNode.querySelector('#generateDescription').addEventListener('click', async (e) => {
+                    const button = e.currentTarget;
+                    const pieceName = calculatorNode.querySelector('#pieceName').value || "uma peça de artesanato";
+                    const materials = Array.from(calculatorNode.querySelectorAll('.material-name')).map(input => input.value).filter(Boolean);
+                    const finalPrice = calculatorNode.querySelector('#finalPrice').textContent;
+                    if (materials.length === 0) { showToast("Adicione pelo menos um material.", 'error'); return; }
+                    const dataPayload = { type: 'description', pieceName, materials, finalPrice };
+                    calculatorNode.querySelector('#descriptionLoader').classList.remove('hidden');
+                    calculatorNode.querySelector('#descriptionText').classList.add('hidden');
+                    const resultText = await callAIAssistant(dataPayload, button);
+                    calculatorNode.querySelector('#descriptionText').textContent = resultText;
+                    calculatorNode.querySelector('#descriptionText').classList.remove('text-center', 'hidden');
+                    calculatorNode.querySelector('#descriptionText').classList.add('text-left', 'whitespace-pre-wrap');
+                    calculatorNode.querySelector('#descriptionLoader').classList.add('hidden');
+                });
+
+                calculatorNode.querySelector('#generateSuggestions').addEventListener('click', async (e) => {
+                    const button = e.currentTarget;
+                    const pieceName = calculatorNode.querySelector('#pieceName').value || "uma peça de artesanato";
+                    const materials = Array.from(calculatorNode.querySelectorAll('.material-name')).map(input => input.value).filter(Boolean);
+                    const totalTime = calculatorNode.querySelector('#totalTime').textContent;
+                    const finalPrice = calculatorNode.querySelector('#finalPrice').textContent;
+                    if (materials.length === 0) { showToast("Adicione os detalhes da peça.", 'error'); return; }
+                    const dataPayload = { type: 'suggestions', pieceName, materials, totalTime, finalPrice };
+                    calculatorNode.querySelector('#suggestionsLoader').classList.remove('hidden');
+                    calculatorNode.querySelector('#suggestionsText').classList.add('hidden');
+                    const resultText = await callAIAssistant(dataPayload, button);
+                    calculatorNode.querySelector('#suggestionsText').textContent = resultText;
+                    calculatorNode.querySelector('#suggestionsText').classList.remove('text-center', 'hidden');
+                    calculatorNode.querySelector('#suggestionsText').classList.add('text-left', 'whitespace-pre-wrap');
+                    calculatorNode.querySelector('#suggestionsLoader').classList.add('hidden');
+                });
+                
+                const restoreBanner = calculatorNode.querySelector('#restoreBanner');
+
+                function savePieceToLocalStorage() {
+                    const materials = Array.from(calculatorNode.querySelectorAll('.material-row')).map(row => ({ name: row.querySelector('.material-name').value, price: row.querySelector('.material-price').value, quantity: row.querySelector('.material-quantity').value }));
+                    const tasks = Array.from(calculatorNode.querySelectorAll('.task-row')).map(row => ({ name: row.querySelector('.task-name').value, time: row.querySelector('.task-time').value }));
+                    const data = { pieceName: calculatorNode.querySelector('#pieceName').value, profitMargin: calculatorNode.querySelector('#profitMargin').value, fees: calculatorNode.querySelector('#fees').value, materials, tasks };
+                    localStorage.setItem('unsavedPiece', JSON.stringify(data));
+                }
+
+                function checkAndRestorePiece() {
+                    const savedData = localStorage.getItem('unsavedPiece');
+                    if (savedData) {
+                        restoreBanner.classList.remove('hidden');
+                    } else {
+                        materialsContainer.innerHTML = '';
+                        tasksContainer.innerHTML = '';
+                    }
+                }
+
+                function loadPieceData(data) {
+                    calculatorNode.querySelector('#pieceName').value = data.pieceName || '';
+                    calculatorNode.querySelector('#profitMargin').value = data.profitMargin || '100';
+                    calculatorNode.querySelector('#fees').value = data.fees || '0';
+                    materialsContainer.innerHTML = '';
+                    tasksContainer.innerHTML = '';
+                    if (data.materials) data.materials.forEach(m => addMaterialRow(m.name, m.price, m.quantity));
+                    if (data.tasks) data.tasks.forEach(t => addTaskRow(t.name, t.time));
+                    calculateAll();
+                }
+
+                calculatorNode.querySelector('#restoreYes').addEventListener('click', () => {
+                    const savedData = JSON.parse(localStorage.getItem('unsavedPiece'));
+                    if (savedData) {
+                        loadPieceData(savedData);
+                    }
+                    localStorage.removeItem('unsavedPiece');
+                    restoreBanner.classList.add('hidden');
+                });
+                
+                calculatorNode.querySelector('#restoreNo').addEventListener('click', () => {
+                    localStorage.removeItem('unsavedPiece');
+                    restoreBanner.classList.add('hidden');
+                    materialsContainer.innerHTML = '';
+                    tasksContainer.innerHTML = '';
+                });
+
+                calculatorNode.addEventListener('input', (e) => {
+                    if (e.target.matches('.piece-input')) {
+                        savePieceToLocalStorage();
+                    }
+                });
+                
+                const savePieceButton = calculatorNode.querySelector('#savePieceButton');
+                const originalSavePieceText = savePieceButton.innerHTML;
+                savePieceButton.addEventListener('click', async () => {
+                    const pieceName = calculatorNode.querySelector('#pieceName').value;
+                    if (!pieceName) {
+                        showToast('Por favor, dê um nome à sua peça antes de salvar.', 'error');
+                        return;
+                    }
+                    setLoading(savePieceButton, true, originalSavePieceText);
+                    savePieceToLocalStorage();
+                    const pieceData = JSON.parse(localStorage.getItem('unsavedPiece'));
+                    
+                    pieceData.createdAt = new Date();
+                    pieceData.finalPrice = calculatorNode.querySelector('#finalPrice').textContent;
+                    
+                    try {
+                        await addDoc(piecesCollectionRef, pieceData);
+                        showToast(`Peça "${pieceName}" salva com sucesso!`, 'success');
+                    } catch (error) {
+                        console.error("Erro ao salvar peça:", error);
+                        showToast("Ocorreu um erro ao salvar sua peça.", 'error');
+                    } finally {
+                        setLoading(savePieceButton, false, originalSavePieceText);
+                    }
+                });
+                
+                const dataToLoad = localStorage.getItem('loadPieceData');
+                if (dataToLoad) {
+                    loadPieceData(JSON.parse(dataToLoad));
+                    localStorage.removeItem('loadPieceData');
+                } else {
+                    checkAndRestorePiece();
+                }
+
+                calculatorNode.addEventListener('click', (e) => {
+                    const copyBtn = e.target.closest('.copy-ai-btn');
+                    if (copyBtn) {
+                        const targetId = copyBtn.dataset.target;
+                        const textElement = document.getElementById(targetId);
+                        if (textElement) {
+                            copyToClipboard(textElement.textContent);
+                        }
+                    }
+                });
+            }
+
+            const mainContent = document.getElementById('main-content');
+            const templates = {
+                dashboard: document.getElementById('dashboard-template'),
+                calculator: document.getElementById('calculator-template'),
+                'my-pieces': document.getElementById('my-pieces-template'),
+                settings: document.getElementById('settings-template'),
+                management: document.getElementById('coming-soon-template'),
+                stock: document.getElementById('coming-soon-template'),
+                support: document.getElementById('support-template'),
+                terms: document.getElementById('terms-template'),
+                privacy: document.getElementById('privacy-template'),
+            };
+
+            const legalPages = ['terms', 'privacy', 'support'];
+
+            async function navigate(hash) {
+                const targetView = hash.substring(1) || 'dashboard';
+                
+                if (!currentUser && legalPages.includes(targetView)) {
+                    const template = templates[targetView];
+                    if (template) {
+                        authContainer.style.display = 'none';
+                        const backButton = document.createElement('button');
+                        backButton.innerHTML = '&larr; Voltar para o login';
+                        backButton.className = 'text-brand-primary hover:underline mb-4 block';
+                        backButton.onclick = () => {
+                            legalContainer.classList.add('hidden');
+                            authContainer.style.display = 'block';
+                            window.location.hash = '';
+                        };
+                        
+                        const contentWrapper = document.createElement('div');
+                        contentWrapper.appendChild(template.content.cloneNode(true));
+                        
+                        legalContainer.innerHTML = '';
+                        legalContainer.appendChild(backButton);
+                        legalContainer.appendChild(contentWrapper);
+                        legalContainer.classList.add('max-w-4xl', 'mx-auto', 'p-4', 'md:p-8');
+                        legalContainer.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                if (!currentUser) return;
+                
+                legalContainer.classList.add('hidden');
+
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.toggle('bg-brand-primary/20', link.hash === hash || (hash === '' && link.hash === '#dashboard'));
+                });
+
+                const template = templates[targetView];
+                if (template) {
+                    mainContent.innerHTML = '';
+                    mainContent.appendChild(template.content.cloneNode(true));
+                    
+                    if (targetView === 'my-pieces') {
+                        const savedPiecesContainer = document.getElementById('savedPiecesContainer');
+                        const loadAndRenderSavedPieces = async () => {
+                            if (!piecesCollectionRef) return;
+                            savedPiecesContainer.innerHTML = '<div class="loader"></div>';
+                            document.getElementById('noPiecesMessage').classList.add('hidden');
+                            try {
+                                const q = query(piecesCollectionRef, orderBy("createdAt", "desc"));
+                                const querySnapshot = await getDocs(q);
+                                savedPiecesContainer.innerHTML = '';
+                                if (querySnapshot.empty) {
+                                    document.getElementById('noPiecesMessage').classList.remove('hidden');
+                                } else {
+                                    querySnapshot.forEach(doc => {
+                                        const piece = doc.data();
+                                        const pieceId = doc.id;
+                                        const card = document.createElement('div');
+                                        card.classList.add('bg-white', 'p-4', 'rounded-lg', 'shadow-md', 'space-y-2');
+                                        card.innerHTML = `
+                                            <h3 class="font-display text-lg text-brand-text font-bold">${piece.pieceName}</h3>
+                                            <p class="text-2xl font-bold text-brand-primary">${piece.finalPrice}</p>
+                                            <div class="flex gap-2 pt-2">
+                                                <button data-id="${pieceId}" class="load-piece-btn flex-1 bg-brand-olive text-white px-3 py-1 rounded-md text-sm font-semibold">Carregar</button>
+                                                <button data-id="${pieceId}" class="delete-piece-btn flex-1 bg-red-500 text-white px-3 py-1 rounded-md text-sm font-semibold">Excluir</button>
+                                            </div>`;
+                                        savedPiecesContainer.appendChild(card);
+                                    });
+                                }
+                            } catch (error) {
+                                console.error("Erro ao carregar peças:", error);
+                                savedPiecesContainer.innerHTML = '<p class="text-red-500">Não foi possível carregar suas peças.</p>';
+                            }
+                        };
+                        
+                        savedPiecesContainer.addEventListener('click', async (e) => {
+                            const pieceId = e.target.dataset.id;
+                            if (!pieceId) return;
+                            if (e.target.classList.contains('delete-piece-btn')) {
+                                if (confirm('Tem certeza que deseja excluir esta peça?')) {
+                                    try {
+                                        await deleteDoc(doc(db, "atelierData", currentUser.uid, "pieces", pieceId));
+                                        showToast('Peça excluída com sucesso.', 'success');
+                                        loadAndRenderSavedPieces();
+                                    } catch (error) {
+                                        showToast('Erro ao excluir a peça.', 'error');
+                                    }
+                                }
+                            } else if (e.target.classList.contains('load-piece-btn')) {
+                                const pieceDoc = await getDoc(doc(db, "atelierData", currentUser.uid, "pieces", pieceId));
+                                if (pieceDoc.exists()) {
+                                    localStorage.setItem('loadPieceData', JSON.stringify(pieceDoc.data()));
+                                    window.location.hash = '#calculator';
+                                }
+                            }
+                        });
+                        loadAndRenderSavedPieces();
+                    } else if (targetView === 'settings') {
+                        document.getElementById('profileName').value = currentUser.displayName || atelierData.name || '';
+                        document.getElementById('profileEmail').value = currentUser.email || '';
+                        document.getElementById('settingsHourlyRate').value = atelierData.hourlyRate || '';
+                        document.getElementById('settingsFixedCosts').value = atelierData.fixedCosts || '';
+                        document.getElementById('settingsHoursWorked').value = atelierData.hoursWorked || '';
+                        
+                        const expirationDateEl = document.getElementById('expirationDate');
+                        const authorizedEmailRef = doc(db, "authorizedEmails", currentUser.email);
+                        getDoc(authorizedEmailRef).then(docSnap => {
+                            if (docSnap.exists()) {
+                                const expirationDate = docSnap.data().expirationDate.toDate();
+                                const formattedDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(expirationDate);
+                                expirationDateEl.textContent = formattedDate;
+                            } else {
+                                expirationDateEl.textContent = "Não foi possível encontrar.";
+                            }
+                        });
+
+                        document.getElementById('saveProfileButton').addEventListener('click', async () => {
+                            const newName = document.getElementById('profileName').value;
+                            if (!newName) { showToast('O nome não pode ficar em branco.', 'error'); return; }
+                            await updateProfile(currentUser, { displayName: newName });
+                            await setDoc(atelierDataRef, { name: newName }, { merge: true });
+                            atelierData.name = newName;
+                            showToast('Perfil atualizado!', 'success');
+                        });
+
+                        document.getElementById('saveAtelierButton').addEventListener('click', () => {
+                           atelierData.hourlyRate = document.getElementById('settingsHourlyRate').value;
+                            atelierData.fixedCosts = document.getElementById('settingsFixedCosts').value;
+                            atelierData.hoursWorked = document.getElementById('settingsHoursWorked').value;
+                            setDoc(atelierDataRef, { ...atelierData }, { merge: true })
+                                .then(() => {
+                                    const settingsStatus = document.getElementById('settingsStatus');
+                                    settingsStatus.querySelector('span').textContent = 'Salvo!';
+                                    settingsStatus.classList.remove('text-yellow-600');
+                                    settingsStatus.classList.add('text-brand-olive');
+                                    settingsStatus.style.opacity = '1';
+                                    setTimeout(() => { settingsStatus.style.opacity = '0'; }, 2000);
+                                });
+                        });
+                    } else if (targetView === 'calculator') {
+                        setupCalculator();
+                    } else if (targetView === 'dashboard') {
+                        document.getElementById('welcomeMessage').textContent = `Bem-vinda(o), ${currentUser.displayName || ''}!`;
+                    }
+                }
+            }
+            
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            
+            window.addEventListener('hashchange', () => navigate(window.location.hash));
+
+            document.body.addEventListener('click', (e) => {
+                const navLink = e.target.closest('.nav-link, .nav-link-legal');
+                if (navLink) {
+                    if (navLink.classList.contains('cursor-not-allowed')) return;
+                    e.preventDefault();
+                    window.location.hash = navLink.hash;
+                    
+                    if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 768) {
+                        sidebar.classList.add('-translate-x-full');
+                        sidebarOverlay.classList.add('hidden');
+                    }
+                }
+            });
+            
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+            });
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            });
+        }
+
+        main();
+    </script>
+</body>
+</html>
